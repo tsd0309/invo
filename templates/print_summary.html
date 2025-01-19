@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Summary</title>
+    <style>
+        @media print {
+            @page {
+                margin: 0.5cm;
+            }
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .company-details {
+            margin-bottom: 20px;
+        }
+        .date-range {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .summary-table th, .summary-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .summary-table th {
+            background-color: #f8f9fa;
+        }
+        .total-section {
+            text-align: right;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">Your Company Name</div>
+        <div class="company-details">
+            123 Business Street, City, Country<br>
+            Phone: +1234567890 | Email: info@company.com
+        </div>
+    </div>
+
+    <div class="date-range">
+        <h3>Invoice Summary</h3>
+        <p>
+            Period: 
+            {% if start_date %}
+                {{ start_date.strftime('%Y-%m-%d') }}
+            {% else %}
+                All Time
+            {% endif %}
+            to
+            {% if end_date %}
+                {{ end_date.strftime('%Y-%m-%d') }}
+            {% else %}
+                Present
+            {% endif %}
+        </p>
+    </div>
+
+    <table class="summary-table">
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Date</th>
+                <th>Customer Name</th>
+                <th>Items</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td>{{ invoice.order_number }}</td>
+                <td>{{ invoice.date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ invoice.customer_name }}</td>
+                <td>{{ invoice.total_items }}</td>
+                <td>₹{{ "%.2f"|format(invoice.total_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3"></td>
+                <td><strong>Total Items:</strong></td>
+                <td>{{ total_items }}</td>
+            </tr>
+            <tr>
+                <td colspan="3"></td>
+                <td><strong>Total Amount:</strong></td>
+                <td>₹{{ "%.2f"|format(total_amount) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="total-section">
+        <p>Total Invoices: {{ invoices|length }}</p>
+        <p>Total Items Sold: {{ total_items }}</p>
+        <p>Total Amount: ₹{{ "%.2f"|format(total_amount) }}</p>
+    </div>
+
+    <div class="no-print" style="margin-top: 20px; text-align: center;">
+        <button onclick="window.print()">Print Summary</button>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    #editor {
+        height: 500px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+    }
+</style>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Security Settings Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6>Two-Factor Authentication (2FA)</h6>
+                        <p class="text-muted small">Manage 2FA settings for users in the Users Management section.</p>
+                        <a href="{{ url_for('users') }}" class="btn btn-outline-primary">Go to Users Management</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Display Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Font Size</label>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-secondary me-2" onclick="changeFontSize(-1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="btn btn-secondary" onclick="changeFontSize(1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Management Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Data Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning" onclick="backupData()">
+                            <i class="fas fa-download"></i> Backup Data
+                        </button>
+                        <button class="btn btn-info" onclick="document.getElementById('restoreFile').click()">
+                            <i class="fas fa-upload"></i> Restore Data
+                        </button>
+                        <input type="file" id="restoreFile" style="display: none" accept=".json" onchange="restoreData(this)">
+                        <button class="btn btn-danger" onclick="deleteAllInvoices()">
+                            <i class="fas fa-trash"></i> Delete All Invoices
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteAllProducts()">
+                            <i class="fas fa-trash"></i> Delete All Products
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteAllData()">
+                            <i class="fas fa-trash-alt"></i> Delete All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Templates Section -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Print Templates</h5>
+                    <a href="{{ url_for('new_print_template') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Invoice Templates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Default</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for template in invoice_templates %}
+                                <tr>
+                                    <td>{{ template.name }}</td>
+                                    <td>
+                                        {% if template.is_default %}
+                                        <span class="badge bg-success">Default</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ template.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('print_template', id=template.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if not template.is_default %}
+                                        <button class="btn btn-sm btn-danger delete-template" data-id="{{ template.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary Templates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Default</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for template in summary_templates %}
+                                <tr>
+                                    <td>{{ template.name }}</td>
+                                    <td>
+                                        {% if template.is_default %}
+                                        <span class="badge bg-success">Default</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ template.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('print_template', id=template.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if not template.is_default %}
+                                        <button class="btn btn-sm btn-danger delete-template" data-id="{{ template.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Shortcodes Section -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Shortcodes</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Invoice Templates:</h6>
+                    <ul>
+                        <li><code>{{ "{{ invoice.order_number }}" }}</code> - Invoice number</li>
+                        <li><code>{{ "{{ invoice.date.strftime('%d-%m-%Y') }}" }}</code> - Invoice date</li>
+                        <li><code>{{ "{{ invoice.customer_name }}" }}</code> - Customer name</li>
+                        <li><code>{{ "{{ invoice.total_items }}" }}</code> - Total number of items</li>
+                        <li><code>{{ "{{ invoice.total_amount }}" }}</code> - Total amount</li>
+                        <li><code>{{ "{% for item in invoice.items %}" }}</code> - Loop through items</li>
+                        <li><code>{{ "{{ item.product.item_code }}" }}</code> - Item code</li>
+                        <li><code>{{ "{{ item.product.description }}" }}</code> - Item description</li>
+                        <li><code>{{ "{{ item.product.uom }}" }}</code> - Unit of measure</li>
+                        <li><code>{{ "{{ item.quantity }}" }}</code> - Quantity</li>
+                        <li><code>{{ "{{ item.price }}" }}</code> - Price</li>
+                        <li><code>{{ "{{ item.amount }}" }}</code> - Amount</li>
+                    </ul>
+
+                    <h6>Summary Templates:</h6>
+                    <ul>
+                        <li><code>{{ "{{ start_date.strftime('%d-%m-%Y') }}" }}</code> - Start date</li>
+                        <li><code>{{ "{{ end_date.strftime('%d-%m-%Y') }}" }}</code> - End date</li>
+                        <li><code>{{ "{{ total_items }}" }}</code> - Total items across all invoices</li>
+                        <li><code>{{ "{{ total_amount }}" }}</code> - Total amount across all invoices</li>
+                        <li><code>{{ "{% for invoice in invoices %}" }}</code> - Loop through invoices</li>
+                        <li><code>{{ "{{ invoice.order_number }}" }}</code> - Invoice number</li>
+                        <li><code>{{ "{{ invoice.date.strftime('%d-%m-%Y') }}" }}</code> - Invoice date</li>
+                        <li><code>{{ "{{ invoice.customer_name }}" }}</code> - Customer name</li>
+                        <li><code>{{ "{{ invoice.total_items }}" }}</code> - Invoice total items</li>
+                        <li><code>{{ "{{ invoice.total_amount }}" }}</code> - Invoice total amount</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+
+<script>
+// Calculator Code Functions
+async function updateCalculatorCode() {
+    const codeInput = document.getElementById('calculatorCode');
+    const messageDiv = document.getElementById('codeUpdateMessage');
+    const newCode = codeInput.value.trim();
+    
+    if (!newCode) {
+        messageDiv.className = 'mt-2 alert alert-danger';
+        messageDiv.textContent = 'Please enter a code';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/settings/calculator-code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code: newCode })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            messageDiv.className = 'mt-2 alert alert-success';
+            messageDiv.textContent = 'Calculator code updated successfully';
+            loadCalculatorCode();
+        } else {
+            messageDiv.className = 'mt-2 alert alert-danger';
+            messageDiv.textContent = data.error || 'Failed to update calculator code';
+        }
+    } catch (error) {
+        messageDiv.className = 'mt-2 alert alert-danger';
+        messageDiv.textContent = 'An error occurred while updating the code';
+    }
+}
+
+async function loadCalculatorCode() {
+    try {
+        const response = await fetch('/settings/calculator-code');
+        const data = await response.json();
+        const input = document.getElementById('calculatorCode');
+        input.value = data.code;
+        input.placeholder = 'Enter new code';
+    } catch (error) {
+        console.error('Failed to load calculator code:', error);
+        const input = document.getElementById('calculatorCode');
+        input.placeholder = 'Error loading current code';
+    }
+}
+
+// Display Settings Functions
+function changeFontSize(delta) {
+    const html = document.documentElement;
+    const currentSize = parseFloat(getComputedStyle(html).fontSize);
+    html.style.fontSize = (currentSize + delta) + 'px';
+    localStorage.setItem('fontSize', html.style.fontSize);
+}
+
+// Data Management Functions
+function backupData() {
+    fetch('/settings/backup')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventory_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        });
+}
+
+function restoreData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = JSON.parse(e.target.result);
+        fetch('/settings/restore', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Data restored successfully');
+                location.reload();
+            } else {
+                alert('Error restoring data: ' + data.error);
+            }
+        });
+    };
+    reader.readAsText(file);
+}
+
+function deleteAllInvoices() {
+    if (confirm('Are you sure you want to delete all invoices? This cannot be undone.')) {
+        fetch('/settings/delete-invoices', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('All invoices deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error deleting invoices: ' + data.error);
+                }
+            });
+    }
+}
+
+function deleteAllProducts() {
+    if (confirm('Are you sure you want to delete all products? This cannot be undone.')) {
+        fetch('/settings/delete-products', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('All products deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error deleting products: ' + data.error);
+                }
+            });
+    }
+}
+
+function deleteAllData() {
+    if (confirm('Are you sure you want to delete all data? This cannot be undone.')) {
+        fetch('/settings/delete-all', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('All data deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error deleting data: ' + data.error);
+                }
+            });
+    }
+}
+
+// Template Management Functions
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize template deletion handlers
+    document.querySelectorAll('.delete-template').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this template?')) {
+                const id = this.dataset.id;
+                
+                fetch(`/settings/print-templates/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting template: ' + data.error);
+                    }
+                });
+            }
+        });
+    });
+
+    // Initialize font size from localStorage
+    const savedFontSize = localStorage.getItem('fontSize');
+    if (savedFontSize) {
+        document.documentElement.style.fontSize = savedFontSize;
+    }
+});
+</script>
+{% endblock %} 

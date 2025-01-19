@@ -1,0 +1,172 @@
+/* Light mode colors */
+:root {
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --card-border: #dee2e6;
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --input-text: #212529;
+    --btn-primary-bg: #0d6efd;
+    --btn-primary-text: #ffffff;
+    --btn-secondary-bg: #6c757d;
+    --btn-secondary-text: #ffffff;
+    --table-border: #dee2e6;
+    --table-stripe: rgba(0, 0, 0, 0.05);
+    --table-hover: rgba(0, 0, 0, 0.075);
+    --nav-bg: #343a40;
+    --nav-text: #ffffff;
+    --link-color: #0d6efd;
+    --muted-text: #6c757d;
+}
+
+/* Dark mode colors */
+:root[class='dark-mode'] {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg: #2d2d2d;
+    --card-border: #404040;
+    --input-bg: #333333;
+    --input-border: #404040;
+    --input-text: #e0e0e0;
+    --btn-primary-bg: #0d6efd;
+    --btn-primary-text: #ffffff;
+    --btn-secondary-bg: #495057;
+    --btn-secondary-text: #ffffff;
+    --table-border: #404040;
+    --table-stripe: rgba(255, 255, 255, 0.05);
+    --table-hover: rgba(255, 255, 255, 0.075);
+    --nav-bg: #1a1a1a;
+    --nav-text: #e0e0e0;
+    --link-color: #5b9aff;
+    --muted-text: #a0a0a0;
+}
+
+/* Apply colors */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom-color: var(--card-border);
+}
+
+.form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--input-text);
+}
+
+.form-control:focus {
+    background-color: var(--input-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--input-text);
+}
+
+.btn-primary {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+}
+
+.table {
+    color: var(--text-color);
+}
+
+.table td, .table th {
+    border-color: var(--table-border);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--table-stripe);
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--table-hover);
+}
+
+.navbar {
+    background-color: var(--nav-bg);
+}
+
+.navbar-brand, .nav-link {
+    color: var(--nav-text) !important;
+}
+
+a {
+    color: var(--link-color);
+}
+
+.text-muted {
+    color: var(--muted-text) !important;
+}
+
+/* Additional dark mode improvements */
+.dark-mode .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.dark-mode .modal-header {
+    border-bottom-color: var(--card-border);
+}
+
+.dark-mode .modal-footer {
+    border-top-color: var(--card-border);
+}
+
+.dark-mode .dropdown-menu {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.dark-mode .dropdown-item {
+    color: var(--text-color);
+}
+
+.dark-mode .dropdown-item:hover {
+    background-color: var(--table-hover);
+}
+
+.dark-mode .form-check-input {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+}
+
+.dark-mode .form-check-input:checked {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+}
+
+/* Ensure placeholder text is visible */
+.dark-mode ::placeholder {
+    color: #888888 !important;
+    opacity: 1;
+}
+
+/* Improve table header visibility */
+.dark-mode .table thead th {
+    border-bottom-color: var(--table-border);
+    background-color: var(--card-bg);
+}
+
+/* Improve form label visibility */
+.dark-mode label {
+    color: var(--text-color);
+}
+
+/* Improve badge visibility */
+.dark-mode .badge {
+    border: 1px solid var(--card-border);
+} 

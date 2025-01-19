@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Invoice</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .invoice-info {
+            margin-bottom: 20px;
+        }
+        .invoice-info table {
+            width: 100%;
+        }
+        .invoice-info td {
+            padding: 5px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+        }
+        .totals {
+            float: right;
+            width: 300px;
+        }
+        .totals table {
+            width: 100%;
+        }
+        .totals td {
+            padding: 5px;
+        }
+        .footer {
+            clear: both;
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+    <script>
+        // Execute as soon as the page starts loading
+        document.addEventListener('DOMContentLoaded', function() {
+            // Print automatically
+            window.print();
+        });
+
+        // When print dialog closes (whether printed or cancelled)
+        window.addEventListener('afterprint', function() {
+            // Close the window
+            window.close();
+        });
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h2>INVOICE</h2>
+    </div>
+
+    <div class="invoice-info">
+        <table>
+            <tr>
+                <td><strong>Bill No:</strong> {{ invoice.order_number }}</td>
+                <td><strong>Date:</strong> {{ invoice.date.strftime('%d-%m-%Y') }}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>Customer Name:</strong> {{ invoice.customer_name }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Item Code</th>
+                <th>Description</th>
+                <th>UOM</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.product.item_code }}</td>
+                <td>{{ item.product.description }}</td>
+                <td>{{ item.product.uom }}</td>
+                <td>{{ "%.2f"|format(item.quantity) }}</td>
+                <td>{{ "%.2f"|format(item.price) }}</td>
+                <td>{{ "%.2f"|format(item.amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table>
+            <tr>
+                <td><strong>Total Items:</strong></td>
+                <td>{{ invoice.total_items }}</td>
+            </tr>
+            <tr>
+                <td><strong>Total Amount:</strong></td>
+                <td>{{ "%.2f"|format(invoice.total_amount) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for your business!</p>
+    </div>
+</body>
+</html> 

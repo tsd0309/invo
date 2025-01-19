@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ template.name if template else 'New Print Template' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    #editor {
+        height: 500px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+</style>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>{{ template.name if template else 'New Print Template' }}</h2>
+        </div>
+        <div class="col text-end">
+            <a href="{{ url_for('settings') }}" class="btn btn-secondary">Back to Settings</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form id="template-form">
+                        <div class="mb-3">
+                            <label class="form-label">Template Name</label>
+                            <input type="text" class="form-control" name="name" value="{{ template.name if template else '' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Template Type</label>
+                            <select class="form-select" name="type" {{ 'disabled' if template else '' }}>
+                                <option value="invoice" {{ 'selected' if template and template.type == 'invoice' else '' }}>Invoice Template</option>
+                                <option value="summary" {{ 'selected' if template and template.type == 'summary' else '' }}>Summary Template</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">HTML Content</label>
+                            <div id="editor">{{ template.content if template else '' }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" name="is_default" id="is_default" 
+                                    {{ 'checked' if template and template.is_default else '' }}>
+                                <label class="form-check-label" for="is_default">Set as Default Template</label>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save Template</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div id="preview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize CodeMirror
+    const editor = CodeMirror(document.getElementById('editor'), {
+        mode: 'htmlmixed',
+        theme: 'monokai',
+        lineNumbers: true,
+        autoCloseTags: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true,
+        value: document.getElementById('editor').textContent
+    });
+
+    // Handle form submission
+    document.getElementById('template-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('name'),
+            type: formData.get('type'),
+            content: editor.getValue(),
+            is_default: formData.get('is_default') === 'on'
+        };
+        
+        const url = '{{ url_for("print_template", id=template.id) if template else url_for("new_print_template") }}';
+        const method = '{{ "PUT" if template else "POST" }}';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("settings") }}';
+            } else {
+                alert('Error saving template: ' + data.error);
+            }
+        });
+    });
+
+    // Update preview when content changes
+    let previewTimeout;
+    editor.on('change', function() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 1000);
+    });
+
+    function updatePreview() {
+        const content = editor.getValue();
+        document.getElementById('preview').innerHTML = content;
+    }
+
+    // Initial preview
+    updatePreview();
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Invoices{% endblock %}
+
+{% block extra_css %}
+<style>
+    .date-filter {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    .invoice-details {
+        background: #f8f9fa;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .details-table {
+        margin-top: 10px;
+    }
+    .action-buttons {
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Invoices List</h5>
+        <div>
+            <button type="button" class="btn btn-danger" id="delete-all-no-restore">Delete All (No Stock Restore)</button>
+            <button type="button" class="btn btn-warning" id="delete-all-restore">Delete All (Restore Stock)</button>
+            <button type="button" class="btn btn-secondary" id="print-summary">Print Summary</button>
+            <a href="/new_invoice" class="btn btn-primary">Create New Invoice</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="date-filter">
+            <form id="filter-form" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start-date" name="start_date">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end-date" name="end_date">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <button type="button" class="btn btn-secondary ms-2" id="reset-filter">Reset</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Order Number</th>
+                        <th>Date</th>
+                        <th>Customer Name</th>
+                        <th>Total Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>{{ invoice.order_number }}</td>
+                        <td>{{ invoice.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ invoice.customer_name }}</td>
+                        <td>{{ "%.2f"|format(invoice.total_amount) }}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-info view-invoice" data-id="{{ invoice.id }}">
+                                View
+                            </button>
+                            <button class="btn btn-sm btn-primary edit-invoice" data-id="{{ invoice.id }}">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-invoice-no-restore" data-id="{{ invoice.id }}">
+                                Delete (No Restore)
+                            </button>
+                            <button class="btn btn-sm btn-warning delete-invoice-restore" data-id="{{ invoice.id }}">
+                                Delete (Restore)
+                            </button>
+                            <button class="btn btn-sm btn-secondary print-invoice" data-id="{{ invoice.id }}">
+                                Print
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="invoice-details-row" id="details-{{ invoice.id }}" style="display: none;">
+                        <td colspan="5">
+                            <div class="invoice-details">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Order Number:</strong> {{ invoice.order_number }}<br>
+                                        <strong>Customer:</strong> {{ invoice.customer_name }}<br>
+                                        <strong>Date:</strong> {{ invoice.date.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <strong>Total Items:</strong> {{ invoice.total_items }}<br>
+                                        <strong>Total Amount:</strong> {{ "%.2f"|format(invoice.total_amount) }}
+                                    </div>
+                                </div>
+                                <div class="details-table">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Product</th>
+                                                <th>Units</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in invoice.items %}
+                                            <tr>
+                                                <td>{{ item.product.item_code }}</td>
+                                                <td>{{ item.product.description }}</td>
+                                                <td>{{ item.product.uom }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>{{ "%.2f"|format(item.price) }}</td>
+                                                <td>{{ "%.2f"|format(item.amount) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date by default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start-date').value = today;
+    document.getElementById('end-date').value = today;
+    
+    // Date filter
+    const filterForm = document.getElementById('filter-form');
+    const startDate = document.getElementById('start-date');
+    const endDate = document.getElementById('end-date');
+    
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const params = new URLSearchParams({
+            start_date: startDate.value,
+            end_date: endDate.value
+        });
+        window.location.href = `/invoices?${params.toString()}`;
+    });
+    
+    document.getElementById('reset-filter').addEventListener('click', function() {
+        window.location.href = '/invoices';
+    });
+    
+    // View invoice details
+    document.querySelectorAll('.view-invoice').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const detailsRow = document.getElementById(`details-${id}`);
+            
+            // Toggle visibility
+            if (detailsRow.style.display === 'none') {
+                // Hide all other detail rows
+                document.querySelectorAll('.invoice-details-row').forEach(row => {
+                    row.style.display = 'none';
+                });
+                detailsRow.style.display = '';
+            } else {
+                detailsRow.style.display = 'none';
+            }
+        });
+    });
+    
+    // Edit invoice
+    document.querySelectorAll('.edit-invoice').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            window.location.href = `/new_invoice?edit=${id}`;
+        });
+    });
+    
+    // Delete invoice
+    document.querySelectorAll('.delete-invoice-no-restore').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this invoice without restoring stock?')) {
+                const id = this.dataset.id;
+                deleteInvoice(id, false);
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-invoice-restore').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this invoice and restore stock?')) {
+                const id = this.dataset.id;
+                deleteInvoice(id, true);
+            }
+        });
+    });
+
+    // Delete all invoices
+    document.getElementById('delete-all-no-restore').addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete ALL invoices without restoring stock? This action cannot be undone!')) {
+            deleteAllInvoices(false);
+        }
+    });
+
+    document.getElementById('delete-all-restore').addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete ALL invoices and restore stock? This action cannot be undone!')) {
+            deleteAllInvoices(true);
+        }
+    });
+
+    function deleteInvoice(id, restoreStock) {
+        fetch(`/invoices/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                restore_stock: restoreStock
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting invoice: ' + data.error);
+            }
+        });
+    }
+
+    function deleteAllInvoices(restoreStock) {
+        fetch('/invoices/delete_all', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                restore_stock: restoreStock
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting invoices: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting invoices');
+        });
+    }
+    
+    // Print invoice
+    document.querySelectorAll('.print-invoice').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            window.open(`/invoices/${id}/print`, '_blank');
+        });
+    });
+    
+    // Print summary
+    document.getElementById('print-summary').addEventListener('click', function() {
+        const params = new URLSearchParams();
+        if (startDate.value) params.append('start_date', startDate.value);
+        if (endDate.value) params.append('end_date', endDate.value);
+        window.open(`/invoices/print_summary?${params.toString()}`, '_blank');
+    });
+
+    // Add View All Details functionality
+    document.getElementById('view-all-details').addEventListener('click', function() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        
+        // Open all invoices in the date range in new tabs
+        document.querySelectorAll('table tbody tr').forEach(row => {
+            const viewBtn = row.querySelector('.view-invoice');
+            if (viewBtn) {
+                const invoiceId = viewBtn.dataset.id;
+                window.open(`/invoices/${invoiceId}/print`, '_blank');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

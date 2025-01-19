@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}{% endblock %} - Inventory System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+    <style>
+        /* Status bar background color for PWA */
+        @media all and (display-mode: standalone) {
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: env(safe-area-inset-top);
+                background-color: var(--navbar-bg);
+                z-index: 9999;
+            }
+        }
+        
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --table-stripe: #f8f9fa;
+            --input-bg: #ffffff;
+            --input-text: #212529;
+            --navbar-bg: #343a40;
+            --navbar-text: #ffffff;
+            --dropdown-bg: #ffffff;
+            --dropdown-text: #212529;
+            --dropdown-hover: #f8f9fa;
+            --btn-text: #ffffff;
+            --header-bg: #f8f9fa;
+            --table-border: #dee2e6;
+            --table-header: #f8f9fa;
+        }
+        
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #e1e1e1;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --table-stripe: #2d2d2d;
+            --input-bg: #333333;
+            --input-text: #e1e1e1;
+            --navbar-bg: #000000;
+            --navbar-text: #ffffff;
+            --dropdown-bg: #333333;
+            --dropdown-text: #e1e1e1;
+            --dropdown-hover: #404040;
+            --header-bg: #2d2d2d;
+            --table-border: #404040;
+            --table-header: #2d2d2d;
+        }
+        
+        /* Prevent double-tap zoom */
+        * {
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-size: var(--base-font-size, 14px);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            touch-action: manipulation;
+        }
+
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            height: 48px;
+            padding: 0 1rem;
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: var(--navbar-text);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+
+        .table {
+            color: var(--text-color);
+            border-color: var(--table-border);
+        }
+
+        .table thead th {
+            background-color: var(--table-header);
+            border-color: var(--table-border);
+            color: var(--text-color);
+        }
+
+        .table td {
+            border-color: var(--table-border);
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: var(--table-stripe);
+        }
+
+        .form-control {
+            background-color: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--input-text);
+        }
+
+        .form-control:focus {
+            background-color: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--input-text);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .form-control:disabled,
+        .form-control[readonly] {
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            opacity: 0.7;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        .modal-header {
+            border-bottom-color: var(--border-color);
+        }
+
+        .modal-footer {
+            border-top-color: var(--border-color);
+        }
+
+        .dropdown-menu {
+            background-color: var(--dropdown-bg);
+            border-color: var(--border-color);
+        }
+
+        .dropdown-item {
+            color: var(--dropdown-text);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--dropdown-hover);
+            color: var(--dropdown-text);
+        }
+
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: var(--btn-text);
+        }
+
+        .btn-success {
+            background-color: #198754;
+            border-color: #198754;
+            color: var(--btn-text);
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: var(--btn-text);
+        }
+
+        .btn-info {
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: var(--btn-text);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        .form-control-plaintext {
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .navbar-collapse {
+                background-color: #343a40;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                margin-top: 0.5rem;
+            }
+            
+            .navbar-nav .nav-link {
+                color: #fff !important;
+                padding: 0.5rem 1rem;
+            }
+            
+            .navbar-nav .nav-link:hover {
+                background-color: #495057;
+                border-radius: 0.25rem;
+            }
+        }
+    </style>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#343a40" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- iOS specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Inventory">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    <!-- Add iOS splash screen images -->
+    <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='icons/splash-640x1136.png') }}" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='icons/splash-750x1334.png') }}" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='icons/splash-1242x2208.png') }}" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='icons/splash-1125x2436.png') }}" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='icons/splash-1242x2688.png') }}" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then((registration) => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch((err) => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+    <script>
+        // Prevent zooming
+        document.addEventListener('touchstart', (event) => {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (event) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">🗒️</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('products') }}">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('invoices') }}">Invoices</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('new_invoice') }}">New Invoice</a>
+                    </li>
+                    {% if session.get('user_id') %}
+                        {% set current_user = get_user(session.get('user_id')) %}
+                        {% if current_user and current_user.role == 'admin' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('users') }}">Users</a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if session.get('user_id') %}
+                        {% set current_user = get_user(session.get('user_id')) %}
+                        <li class="nav-item">
+                            <span class="nav-link">{{ current_user.username }}</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid content" style="margin-top: 48px;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+    <script>
+        // Initialize dark mode from localStorage
+        document.documentElement.classList.toggle('dark-mode', localStorage.getItem('darkMode') === 'true');
+        
+        // Font size controls
+        document.documentElement.style.setProperty('--base-font-size', localStorage.getItem('base-font-size') || '14px');
+        
+        function changeFontSize(delta) {
+            const currentSize = parseInt(getComputedStyle(document.body).fontSize);
+            const newSize = currentSize + delta;
+            document.documentElement.style.setProperty('--base-font-size', newSize + 'px');
+            localStorage.setItem('base-font-size', newSize + 'px');
+        }
+    </script>
+</body>
+</html> 

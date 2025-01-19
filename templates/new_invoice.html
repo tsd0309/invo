@@ -1,0 +1,2264 @@
+{% extends "base.html" %}
+
+{% block title %}New Invoice{% endblock %}
+
+{% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .content-wrapper {
+        margin-bottom: 70px;
+        padding: 0;
+    }
+    .invoice-header {
+        background-color: var(--header-bg);
+        padding: 8px 15px;
+        border-bottom: 1px solid var(--border-color);
+        position: sticky;
+        top: 48px;
+        z-index: 1020;
+    }
+    .invoice-header .form-group {
+        margin-bottom: 8px;
+    }
+    .invoice-header .form-control {
+        height: 32px;
+        padding: 4px 8px;
+    }
+    .invoice-header label {
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+    .items-container {
+        padding: 15px;
+        margin-top: 0;
+        height: calc(100vh - 180px);
+        overflow-y: auto;
+    }
+    .item-row {
+        display: grid;
+        grid-template-columns: 50px 120px 1fr 100px 100px 120px 120px 80px;
+        gap: 10px;
+        margin-bottom: 8px;
+        align-items: center;
+        height: 32px;
+        background-color: var(--bg-color);
+    }
+    
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+        body {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .content-wrapper {
+            margin-bottom: 0;
+            padding: 0;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 70px;
+        }
+        
+        .invoice-header {
+            position: sticky;
+            top: 0;
+            padding: 8px;
+            background-color: var(--header-bg);
+            z-index: 1020;
+        }
+        
+        .items-container {
+            padding: 12px;
+            height: auto;
+            overflow: visible;
+            background: #f5f5f5;
+            margin-bottom: 70px;
+        }
+        
+        /* Prevent zoom on input focus */
+        input[type="number"],
+        input[type="text"],
+        select,
+        textarea {
+            font-size: 16px !important;
+            max-height: 100%;
+            transform: scale(1);
+            transform-origin: left top;
+        }
+        
+        .item-row input[type="number"] {
+            font-size: 16px !important;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* Bottom bar styles */
+        .bottom-bar {
+            padding: 8px 12px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1030;
+            height: 60px;
+        }
+        
+        .bottom-bar .row {
+            flex-direction: row;
+            align-items: center !important;
+            height: 100%;
+            margin: 0;
+        }
+        
+        .bottom-bar .col-md-4:last-child {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding-right: 70px;
+        }
+        
+        .bottom-bar .btn {
+            padding: 6px 12px;
+            height: 36px;
+            font-size: 14px;
+            margin: 0;
+            width: 120px !important;
+            flex: none !important;
+        }
+        
+        /* Show save & print button on mobile */
+        .bottom-bar #save-print-invoice {
+            display: block !important;
+            width: 120px !important;
+        }
+        
+        /* Total amount styling */
+        #total-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        /* Adjust content padding to match new bottom bar height */
+        .content-wrapper {
+            padding-bottom: 120px;
+        }
+        
+        .items-container {
+            margin-bottom: 120px;
+        }
+        
+        /* Hide desktop table header in mobile */
+        .item-row.header {
+            display: none !important;
+        }
+        
+        /* Mobile table layout */
+        .item-row {
+            display: block !important;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: auto !important;
+            min-height: auto !important;
+        }
+        
+        /* Product info row */
+        .item-row .product-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .item-row .product-info .code-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .item-row .serial-number {
+            font-weight: bold;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .item-row .product-code {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        /* Values row */
+        .item-row .values-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .item-row .quantity-section,
+        .item-row .price-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .item-row .label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .item-row input[type="number"] {
+            width: 120px;
+            height: 36px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: right;
+            background: #f8f9fa;
+        }
+        
+        /* Total row */
+        .item-row .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+        }
+        
+        .item-row .total-label {
+            font-weight: 500;
+            color: #333;
+            font-size: 15px;
+        }
+        
+        .item-row .total {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        /* Action row */
+        .item-row .actions {
+            text-align: right;
+        }
+        
+        .item-row .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        /* Hide only Save & Download button on mobile */
+        .bottom-bar #save-download-invoice {
+            display: none !important;
+        }
+        
+        #total-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        /* Hide the default product search row on mobile */
+        #new-row {
+            display: none !important;
+        }
+        
+        /* Add Product FAB Button */
+        .add-product-fab {
+            position: fixed;
+            bottom: 12px;
+            right: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 1031;
+            transition: background-color 0.2s;
+        }
+        
+        .add-product-fab:hover {
+            background: #0056b3;
+        }
+        
+        /* Product Entry Modal */
+        .product-entry-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+        
+        .product-entry-modal.show {
+            display: block;
+        }
+        
+        .modal-content {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            z-index: 2001;
+            width: 100% !important;
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h5 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .modal-close {
+            border: none;
+            background: none;
+            font-size: 24px;
+            color: #666;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .modal-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-footer {
+            padding: 16px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .modal-footer .btn {
+            flex: 1;
+            height: 44px;
+        }
+        
+        /* Search results in modal */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1050;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            margin-top: 4px;
+            width: 100% !important;
+        }
+        
+        .search-results.show {
+            display: block !important;
+        }
+        
+        .search-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 48px;
+        }
+        
+        .search-item .content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0; /* Allow content to shrink */
+        }
+        
+        .search-item .name {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0;
+        }
+        
+        .search-item .price {
+            font-size: 14px;
+            font-weight: 500;
+            color: #007bff;
+            white-space: nowrap;
+            margin: 0;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .search-item .select-btn {
+            padding: 4px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            height: 32px;
+            min-width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .search-item .select-btn:active {
+            background: #0056b3;
+        }
+        
+        @media (max-width: 768px) {
+            .search-item {
+                padding: 8px 10px;
+            }
+            
+            .search-item .select-btn {
+                min-width: 60px;
+                padding: 4px 8px;
+            }
+            
+            .search-item .price {
+                min-width: 70px;
+            }
+        }
+    }
+    
+    /* Desktop-only styles */
+    @media (min-width: 769px) {
+        .add-product-fab,
+        .product-entry-modal {
+            display: none;
+        }
+        
+        .search-results {
+            position: fixed;
+            max-height: 180px;
+            margin-top: 2px;
+            z-index: 1051;
+        }
+        
+        .invoice-header {
+            z-index: 1050;
+        }
+        
+        .product-search.flip-dropdown .search-results {
+            margin-bottom: 2px;
+        }
+        
+        /* Update the invoice header styles for desktop */
+        .invoice-header {
+            padding: 4px 12px;  /* Reduced padding */
+            min-height: 40px;   /* Added min-height */
+        }
+        
+        .invoice-header .form-group {
+            margin-bottom: 4px;  /* Reduced margin */
+        }
+        
+        .invoice-header .form-control {
+            height: 28px;      /* Reduced height */
+            padding: 2px 6px;  /* Reduced padding */
+            font-size: 13px;   /* Smaller font */
+        }
+        
+        .invoice-header label {
+            font-size: 11px;    /* Smaller font */
+            margin-bottom: 1px; /* Reduced margin */
+        }
+        
+        /* Update table header styles */
+        .item-row.header {
+            height: 28px;      /* Reduced height */
+            min-height: 28px;  /* Added min-height */
+            padding: 4px 8px;  /* Reduced padding */
+        }
+        
+        .item-row.header label {
+            font-size: 11px;   /* Smaller font */
+            line-height: 1;    /* Tighter line height */
+        }
+    }
+    
+    /* Rest of the existing styles */
+    .item-row.header {
+        position: sticky;
+        top: 0;
+        background-color: var(--header-bg);
+        z-index: 1020;
+        font-weight: bold;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .item-row.draggable {
+        cursor: move;
+    }
+    .item-row.dragging {
+        opacity: 0.5;
+    }
+    .item-row label {
+        font-weight: bold;
+        font-size: 12px;
+        margin: 0;
+    }
+    .item-row .form-control {
+        height: 32px;
+        padding: 4px 8px;
+    }
+    .item-row .btn {
+        padding: 4px 8px;
+        margin: 0;
+    }
+    .product-search {
+        position: relative;
+        width: 100%;
+    }
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: var(--dropdown-bg);
+        border: 1px solid var(--border-color);
+        max-height: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 1050;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        width: 600px;
+        border-radius: 4px;
+        margin-top: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+    }
+    .search-results::-webkit-scrollbar {
+        width: 6px;
+    }
+    .search-results::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .search-results::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 3px;
+    }
+    .search-item {
+        padding: 4px 8px;
+        cursor: pointer;
+        display: grid;
+        grid-template-columns: 100px minmax(200px, 1fr) 100px 100px;
+        gap: 8px;
+        align-items: center;
+        color: var(--dropdown-text);
+        border-bottom: 1px solid var(--border-color);
+        min-height: 28px;
+        font-size: 13px;
+    }
+    .search-item .name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .search-item:last-child {
+        border-bottom: none;
+    }
+    .search-item:hover, .search-item.selected {
+        background: var(--dropdown-hover);
+    }
+    .search-item .code {
+        font-weight: bold;
+    }
+    .search-item .price {
+        text-align: right;
+    }
+    .search-item .stock {
+        text-align: right;
+        color: #28a745;
+    }
+    .search-item .stock.low {
+        color: #dc3545;
+    }
+    .bottom-bar {
+        padding: 16px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        height: auto;
+        min-height: 120px;
+    }
+    /* Remove spinners from number inputs */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    .form-control-plaintext {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+    .product-uom {
+        text-transform: uppercase;
+    }
+    #total-amount {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+    .modal-body .form-group {
+        position: relative;
+        margin-bottom: 16px;
+    }
+    /* Desktop-specific bottom bar styles */
+    @media (min-width: 769px) {
+        .bottom-bar {
+            padding: 8px 16px;
+            height: auto;
+            min-height: 60px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .bottom-bar .btn {
+            padding: 4px 12px;
+            margin-left: 8px;
+        }
+    }
+    /* Mobile-specific bottom bar styles */
+    @media (max-width: 768px) {
+        .content-wrapper {
+            padding-bottom: 80px;  /* Add padding to prevent content from being hidden */
+        }
+        
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            padding: 12px 16px;
+            min-height: 60px;
+            height: auto;
+            z-index: 1000;
+        }
+        
+        .bottom-bar .row {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .bottom-bar .col-md-4 {
+            width: auto;
+            flex: none;
+        }
+        
+        .bottom-bar .col-md-4:first-child {
+            display: none;  /* Hide total items */
+        }
+        
+        .bottom-bar .col-md-4:nth-child(2) {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        
+        .bottom-bar .col-md-4:last-child {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex: 1;
+        }
+        
+        .bottom-bar .btn {
+            padding: 8px 16px;
+            height: 40px;
+            font-size: 14px;
+            margin: 0;
+            min-width: 100px;
+        }
+        
+        .bottom-bar #save-print-invoice {
+            display: none;  /* Hide save & print button on mobile */
+        }
+        
+        #total-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+    }
+    /* Hide Save & Download button in both desktop and mobile views */
+    #save-download-invoice {
+        display: none !important;
+    }
+    .modal-body .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        max-height: 50vh;
+        overflow-y: auto;
+        z-index: 2002;
+        display: none;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        pointer-events: auto;
+    }
+    
+    .search-item {
+        padding: 16px;
+        border-bottom: 1px solid #eee;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+        position: relative;
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .search-item.selected {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .search-item:active {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    /* Add padding between items for better touch targets */
+    .search-item + .search-item {
+        margin-top: 1px;
+    }
+    
+    /* Make the touch target area larger */
+    .search-item .name,
+    .search-item .price {
+        padding: 4px 0;
+    }
+
+    /* Update the search-item grid layout for desktop */
+    @media (min-width: 769px) {
+        .search-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 100px 100px;
+            gap: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .search-item .code {
+            font-weight: bold;
+        }
+
+        .search-item .name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .search-item .price {
+            text-align: right;
+        }
+
+        .search-item .stock {
+            text-align: right;
+            color: #28a745;
+        }
+
+        .search-item.selected {
+            background-color: var(--dropdown-hover);
+        }
+    }
+
+    /* Update the invoice header styles for desktop */
+    @media (min-width: 769px) {
+        .invoice-header {
+            padding: 4px 12px;  /* Reduced padding */
+            min-height: 40px;   /* Added min-height */
+        }
+
+        .invoice-header .form-group {
+            margin-bottom: 4px;  /* Reduced margin */
+        }
+
+        .invoice-header .form-control {
+            height: 28px;      /* Reduced height */
+            padding: 2px 6px;  /* Reduced padding */
+            font-size: 13px;   /* Smaller font */
+        }
+
+        .invoice-header label {
+            font-size: 11px;    /* Smaller font */
+            margin-bottom: 1px; /* Reduced margin */
+        }
+
+        /* Update table header styles */
+        .item-row.header {
+            height: 28px;      /* Reduced height */
+            min-height: 28px;  /* Added min-height */
+            padding: 4px 8px;  /* Reduced padding */
+        }
+
+        .item-row.header label {
+            font-size: 11px;   /* Smaller font */
+            line-height: 1;    /* Tighter line height */
+        }
+    }
+
+    @media (min-width: 769px) {
+        /* Make invoice header and table full width */
+        .invoice-header .container-fluid,
+        .items-container.container-fluid {
+            max-width: 100%;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* Remove gap above table */
+        .items-container {
+            padding-top: 0;
+            margin-top: 0;
+        }
+
+        /* Fix table header sticky positioning */
+        .item-row.header {
+            position: sticky;
+            top: 0px; /* Match invoice header height */
+            background-color: var(--header-bg);
+            z-index: 1020;
+            height: 28px;
+            min-height: 28px;
+            padding: 4px 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Reduce row heights to show more rows */
+        .item-row {
+            height: 28px;
+            min-height: 28px;
+            padding: 2px 8px;
+        }
+
+        .item-row .form-control {
+            height: 24px;
+            padding: 2px 6px;
+            font-size: 15px;
+        }
+
+        .item-row .btn {
+            padding: 2px 6px;
+            height: 24px;
+            font-size: 12px;
+        }
+
+        /* Ensure invoice header stays on top */
+        .invoice-header {
+            position: sticky;
+            top: 0;
+            background-color: var(--header-bg);
+            z-index: 1021;
+            border-bottom: 1px solid var(--border-color);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <form id="invoice-form" autocomplete="off">
+        <div class="invoice-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Order Number</label>
+                            <input type="text" class="form-control" id="order_number" readonly tabindex="-1">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" class="form-control" id="date" required tabindex="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Customer Name</label>
+                            <input type="text" class="form-control" id="customer_name" required tabindex="2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid items-container">
+            <div class="item-row header">
+                <div><label>S.No</label></div>
+                <div><label>Code</label></div>
+                <div><label>Product Name</label></div>
+                <div><label>Units</label></div>
+                <div><label>Quantity</label></div>
+                <div><label>Price</label></div>
+                <div><label>Total</label></div>
+                <div><label>Action</label></div>
+            </div>
+            <div id="items-container"></div>
+            <div class="item-row" id="new-row">
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <div class="product-search">
+                        <input type="text" class="form-control" id="product-search" placeholder="Search product..." tabindex="3">
+                        <div class="search-results"></div>
+                    </div>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext"></span>
+                </div>
+                <div></div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Add Product FAB Button -->
+<button class="add-product-fab" id="add-product-fab">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- Product Entry Modal -->
+<div class="product-entry-modal" id="product-entry-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5>Add Product</h5>
+            <button type="button" class="modal-close" id="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Search Product</label>
+                <div class="product-search">
+                    <input type="text" class="form-control" id="modal-product-search" placeholder="Search by name or code">
+                    <div class="search-results"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Selected Product</label>
+                <input type="text" class="form-control" id="modal-product-name" readonly>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" class="form-control" id="modal-quantity" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" class="form-control" id="modal-price" step="0.01">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="modal-add">Submit</button>
+            <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <strong>Total Items:</strong> <span id="total-items">0</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Total Amount:</strong> ₹<span id="total-amount">0.00</span>
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="button" class="btn btn-info" id="save-download-invoice" tabindex="6">Save & Download</button>
+                <button type="button" class="btn btn-primary" id="save-invoice" tabindex="4">Save</button>
+                <button type="button" class="btn btn-success" id="save-print-invoice" tabindex="5">Save & Print</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date field with today's date
+    document.getElementById('date').valueAsDate = new Date();
+    
+    const searchInput = document.getElementById('product-search');
+    const searchResults = document.querySelector('.search-results');
+    const itemsContainer = document.getElementById('items-container');
+    let selectedSearchIndex = -1;
+    let searchItems = [];
+    let itemCount = 0;
+    
+    function updateSerialNumbers() {
+        const rows = itemsContainer.querySelectorAll('.item-row');
+        rows.forEach((row, index) => {
+            row.querySelector('.serial-number').textContent = index + 1;
+        });
+    }
+    
+    function calculateRowTotal(row) {
+        const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+        const price = parseFloat(row.querySelector('.price').value) || 0;
+        const total = Math.round((qty * price) * 100) / 100;
+        row.querySelector('.total').textContent = total.toFixed(2);
+        return total;
+    }
+    
+    function updateTotals() {
+        const rows = itemsContainer.querySelectorAll('.item-row');
+        let totalAmount = 0;
+        
+        // Sum up the rounded row totals
+        rows.forEach(row => {
+            const total = parseFloat(row.querySelector('.total').textContent) || 0;
+            totalAmount += total;
+        });
+        
+        // Final rounding to ensure exactly 2 decimal places
+        totalAmount = Math.round(totalAmount * 100) / 100;
+        
+        document.getElementById('total-items').textContent = rows.length;
+        document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+    }
+    
+    function createProductRow(product) {
+        itemCount++;
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.dataset.productId = product.id;
+        
+        if (window.innerWidth <= 768) {
+            row.innerHTML = `
+                <div class="product-info">
+                    <div class="code-section">
+                        <span class="serial-number"></span>
+                        <span class="product-code">${product.item_code}</span>
+                    </div>
+                    <div class="product-name">${product.description}</div>
+                </div>
+                <div class="values-row">
+                    <div class="quantity-section">
+                        <span class="label">Quantity</span>
+                        <input type="number" class="form-control quantity" min="0" step="0.01" value="">
+                    </div>
+                    <div class="price-section">
+                        <span class="label">Price</span>
+                        <input type="number" class="form-control price" step="0.01" value="${product.price}">
+                    </div>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">Total</span>
+                    <span class="total">0.00</span>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            `;
+        } else {
+            // Keep existing desktop layout
+            row.innerHTML = `
+                <div>
+                    <span class="form-control-plaintext serial-number"></span>
+                </div>
+                <div>
+                    <span class="form-control-plaintext product-code">${product.item_code}</span>
+                </div>
+                <div>
+                    <div class="product-search">
+                        <input type="text" class="form-control product-name" value="${product.description}" readonly>
+                        <div class="search-results"></div>
+                    </div>
+                </div>
+                <div>
+                    <span class="form-control-plaintext product-uom">${product.uom}</span>
+                </div>
+                <div>
+                    <input type="number" class="form-control quantity" min="0" step="0.01" value="">
+                </div>
+                <div>
+                    <input type="number" class="form-control price" step="0.01" value="${product.price}">
+                </div>
+                <div>
+                    <span class="form-control-plaintext total">0.00</span>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Add event listeners
+        const productNameInput = row.querySelector('.product-name');
+        const qtyInput = row.querySelector('.quantity');
+        const priceInput = row.querySelector('.price');
+        const removeBtn = row.querySelector('.remove-row');
+        
+        // Event listeners
+        productNameInput.addEventListener('click', function() {
+            this.readOnly = false;
+            this.select();
+            setupProductSearch(this);
+        });
+        
+        qtyInput.addEventListener('input', () => {
+            calculateRowTotal(row);
+            updateTotals();
+        });
+        
+        qtyInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                priceInput.focus();
+                priceInput.select();
+            }
+        });
+        
+        priceInput.addEventListener('input', () => {
+            calculateRowTotal(row);
+            updateTotals();
+        });
+        
+        priceInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+        
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateSerialNumbers();
+            updateTotals();
+            searchInput.focus();
+        });
+        
+        itemsContainer.appendChild(row);
+        updateSerialNumbers();
+        updateTotals();
+        
+        // Clear search
+        searchInput.value = '';
+        searchResults.style.display = 'none';
+        
+        // For mobile view, scroll to the new row instead of focusing quantity
+        if (window.innerWidth <= 768) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        } else {
+            // Keep desktop behavior
+            qtyInput.focus();
+        }
+        
+        // Set up keyboard navigation for the new row
+        setupFieldNavigation(row);
+        
+        // Prevent arrow keys from changing number input values
+        qtyInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+            }
+        });
+        
+        priceInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    function createSearchItem(product) {
+        const div = document.createElement('div');
+        div.className = 'search-item';
+        
+        // Different layout for mobile vs desktop
+        if (window.innerWidth <= 768) {
+            div.innerHTML = `
+                <div class="content">
+                    <div class="name">${product.description}</div>
+                    <div class="price">₹${product.price.toFixed(2)}</div>
+                </div>
+                <button type="button" class="select-btn">Select</button>
+            `;
+        } else {
+            div.innerHTML = `
+                <div class="code">${product.item_code}</div>
+                <div class="name">${product.description}</div>
+                <div class="price">₹${product.price.toFixed(2)}</div>
+                <div class="stock">${product.stock || 0}</div>
+            `;
+        }
+
+        // Add keyboard navigation for desktop
+        if (window.innerWidth > 768) {
+            div.addEventListener('click', () => {
+                if (div.closest('.modal-body')) {
+                    handleModalProductSelect(product);
+                } else {
+                    createProductRow(product);
+                }
+            });
+        } else {
+            const selectBtn = div.querySelector('.select-btn');
+            selectBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (div.closest('.modal-body')) {
+                    handleModalProductSelect(product);
+                } else {
+                    createProductRow(product);
+                }
+            });
+        }
+
+        return div;
+    }
+    
+    function updateDropdownPosition(searchResults) {
+        if (window.innerWidth <= 768) return; // Only apply for desktop view
+        
+        const searchContainer = searchResults.closest('.product-search');
+        if (!searchContainer) return;
+        
+        // Get the bottom bar height
+        const bottomBar = document.querySelector('.bottom-bar');
+        const bottomBarHeight = bottomBar ? bottomBar.offsetHeight : 0;
+        
+        // Get the search input position
+        const searchInput = searchContainer.querySelector('input');
+        const inputRect = searchInput.getBoundingClientRect();
+        
+        // Position the dropdown
+        searchResults.style.position = 'fixed';
+        searchResults.style.width = '600px';
+        searchResults.style.left = `${inputRect.left}px`;
+        
+        // Calculate available space
+        const spaceBelow = window.innerHeight - inputRect.bottom - bottomBarHeight - 10;
+        
+        if (spaceBelow < 180) { // Reduced from 200 to 180
+            // Position above the input
+            searchContainer.classList.add('flip-dropdown');
+            searchResults.style.top = 'auto';
+            searchResults.style.bottom = `${window.innerHeight - inputRect.top + 2}px`;
+        } else {
+            // Position below the input
+            searchContainer.classList.remove('flip-dropdown');
+            searchResults.style.top = `${inputRect.bottom + 2}px`;
+            searchResults.style.bottom = 'auto';
+        }
+    }
+    
+    function setupProductSearch(input) {
+        if (input.id === 'modal-product-search') {
+            const results = input.parentElement.querySelector('.search-results');
+            
+            // Handle input changes
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                if (query.length < 1) {
+                    results.classList.remove('show');
+                    return;
+                }
+                
+                fetch(`/products/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        searchItems = products;
+                        results.innerHTML = '';
+                        
+                        if (products.length === 0) {
+                            results.classList.remove('show');
+                            return;
+                        }
+                        
+                        products.forEach((product, index) => {
+                            const div = createSearchItem(product);
+                            results.appendChild(div);
+                        });
+                        
+                        results.classList.add('show');
+                        updateDropdownPosition(results);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching products:', error);
+                        results.classList.remove('show');
+                    });
+            });
+            
+            // Handle focus
+            input.addEventListener('focus', function() {
+                if (this.value.trim().length > 0) {
+                    results.classList.add('show');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !results.contains(e.target)) {
+                    results.classList.remove('show');
+                }
+            });
+        } else {
+            // Original product search setup for non-modal search
+            const results = input.parentElement.querySelector('.search-results');
+            
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                selectedSearchIndex = -1;
+                
+                if (query.length < 1) {
+                    results.style.display = 'none';
+                    return;
+                }
+                
+                fetch(`/products/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        searchItems = products;
+                        results.innerHTML = '';
+                        products.forEach((product, index) => {
+                            const div = createSearchItem(product);
+                            results.appendChild(div);
+                        });
+                        if (products.length) {
+                            results.style.display = 'block';
+                            updateDropdownPosition(results);
+                        } else {
+                            results.style.display = 'none';
+                        }
+                    });
+            });
+        }
+    }
+    
+    function updateRowWithProduct(row, product) {
+        row.dataset.productId = product.id;
+        row.querySelector('.product-code').textContent = product.item_code;
+        row.querySelector('.product-name').value = product.description;
+        row.querySelector('.product-name').readOnly = true;
+        row.querySelector('.product-uom').textContent = product.uom;
+        row.querySelector('.price').value = product.price;
+        row.querySelector('.search-results').style.display = 'none';
+        row.querySelector('.quantity').focus();
+    }
+    
+    function updateSearchSelection(results) {
+        const items = results.querySelectorAll('.search-item');
+        items.forEach((item, index) => {
+            if (index === selectedSearchIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Set up main product search
+    setupProductSearch(searchInput);
+    
+    // Customer name field navigation
+    document.getElementById('customer_name').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+    
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(e) {
+        const searchDivs = document.querySelectorAll('.product-search');
+        searchDivs.forEach(div => {
+            if (!div.contains(e.target)) {
+                div.querySelector('.search-results').style.display = 'none';
+            }
+        });
+    });
+    
+    // Save invoice
+    function saveInvoice(shouldPrint = false, shouldDownload = false) {
+        const rows = Array.from(itemsContainer.querySelectorAll('.item-row:not(.header)'));
+        const items = rows.map(row => ({
+            product_id: parseInt(row.dataset.productId),
+            quantity: parseFloat(row.querySelector('.quantity').value),
+            price: parseFloat(row.querySelector('.price').value),
+            amount: parseFloat(row.querySelector('.total').textContent)
+        }));
+        
+        const data = {
+            order_number: document.getElementById('order_number').value,
+            date: document.getElementById('date').value,
+            customer_name: document.getElementById('customer_name').value,
+            total_amount: parseFloat(document.getElementById('total-amount').textContent),
+            total_items: parseInt(document.getElementById('total-items').textContent),
+            items: items
+        };
+
+        const editId = new URLSearchParams(window.location.search).get('edit');
+        const url = editId ? `/invoices/${editId}` : '/new_invoice';
+        const method = editId ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const invoiceId = editId || data.id;
+                if (shouldPrint) {
+                    // For mobile devices, open in same tab
+                    if (window.innerWidth <= 768) {
+                        window.location.href = `/invoices/${invoiceId}/print`;
+                    } else {
+                        // For desktop, open in new tab
+                        window.open(`/invoices/${invoiceId}/print`, '_blank');
+                    }
+                }
+                if (shouldDownload) {
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/invoices/${invoiceId}/download`;
+                    downloadLink.download = `invoice_${invoiceId}.pdf`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                }
+                
+                // Clear the form and reset the page
+                document.getElementById('customer_name').value = '';
+                document.getElementById('date').valueAsDate = new Date();
+                itemsContainer.innerHTML = '';
+                document.getElementById('total-items').textContent = '0';
+                document.getElementById('total-amount').textContent = '0.00';
+                document.getElementById('product-search').value = '';
+                
+                // Fetch new order number
+                fetch('/new_invoice')
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newOrderNumber = doc.getElementById('order_number').value;
+                        document.getElementById('order_number').value = newOrderNumber;
+                    });
+                
+                return;
+            } else {
+                alert('Error saving invoice: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving invoice: ' + error.message);
+        });
+    }
+    
+    document.getElementById('save-invoice').addEventListener('click', () => saveInvoice(false, false));
+    document.getElementById('save-print-invoice').addEventListener('click', () => saveInvoice(true, false));
+    document.getElementById('save-download-invoice').addEventListener('click', () => saveInvoice(false, true));
+    
+    // Block arrow keys except in search dropdown
+    document.addEventListener('keydown', function(e) {
+        if (e.key.startsWith('Arrow')) {
+            const target = e.target;
+            const isSearchInput = target.classList.contains('product-name') || target.id === 'product-search';
+            const searchResults = target.closest('.product-search')?.querySelector('.search-results');
+            
+            if (!isSearchInput || (isSearchInput && !searchResults?.style.display !== 'none')) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    // Make rows draggable
+    function initDragAndDrop() {
+        const rows = itemsContainer.querySelectorAll('.item-row:not(.header)');
+        rows.forEach(row => {
+            row.draggable = true;
+            row.classList.add('draggable');
+            
+            row.addEventListener('dragstart', () => {
+                row.classList.add('dragging');
+            });
+            
+            row.addEventListener('dragend', () => {
+                row.classList.remove('dragging');
+                updateSerialNumbers();
+            });
+        });
+
+        itemsContainer.addEventListener('dragover', e => {
+            e.preventDefault();
+            const draggingRow = itemsContainer.querySelector('.dragging');
+            const siblings = [...itemsContainer.querySelectorAll('.item-row:not(.header):not(.dragging)')];
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                const offset = e.clientY - box.top - box.height / 2;
+                return offset < 0;
+            });
+            
+            if (nextSibling) {
+                itemsContainer.insertBefore(draggingRow, nextSibling);
+            } else {
+                itemsContainer.appendChild(draggingRow);
+            }
+        });
+    }
+
+    // Update createProductRow function to initialize drag and drop
+    const originalCreateProductRow = createProductRow;
+    createProductRow = function(product) {
+        originalCreateProductRow(product);
+        initDragAndDrop();
+    }
+
+    // Load invoice for editing
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    if (editId) {
+        fetch(`/invoices/${editId}`)
+            .then(response => response.json())
+            .then(invoice => {
+                document.getElementById('order_number').value = invoice.order_number;
+                document.getElementById('date').value = invoice.date.split('T')[0];
+                document.getElementById('customer_name').value = invoice.customer_name;
+                
+                // Clear existing items
+                itemsContainer.innerHTML = '';
+                
+                // Add all items
+                invoice.items.forEach(item => {
+                    const product = {
+                        id: item.product_id,
+                        item_code: item.product_code,
+                        description: item.description,
+                        uom: item.uom,
+                        price: item.price,
+                        stock: item.stock || 0
+                    };
+                    
+                    const row = document.createElement('div');
+                    row.className = 'item-row';
+                    row.dataset.productId = product.id;
+                    
+                    if (window.innerWidth <= 768) {
+                        row.innerHTML = `
+                            <div class="product-info">
+                                <div class="code-section">
+                                    <span class="serial-number"></span>
+                                    <span class="product-code">${product.item_code}</span>
+                                </div>
+                                <div class="product-name">${product.description}</div>
+                            </div>
+                            <div class="values-row">
+                                <div class="quantity-section">
+                                    <span class="label">Quantity</span>
+                                    <input type="number" class="form-control quantity" min="0" step="0.01" value="${item.quantity}">
+                                </div>
+                                <div class="price-section">
+                                    <span class="label">Price</span>
+                                    <input type="number" class="form-control price" step="0.01" value="${item.price}">
+                                </div>
+                            </div>
+                            <div class="total-row">
+                                <span class="total-label">Total</span>
+                                <span class="total">${item.amount.toFixed(2)}</span>
+                            </div>
+                            <div class="actions">
+                                <button type="button" class="btn btn-danger btn-sm remove-row">
+                                    <i class="fas fa-trash"></i> Remove
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // Keep existing desktop layout
+                        row.innerHTML = `
+                            <div>
+                                <span class="form-control-plaintext serial-number"></span>
+                            </div>
+                            <div>
+                                <span class="form-control-plaintext product-code">${product.item_code}</span>
+                            </div>
+                            <div>
+                                <div class="product-search">
+                                    <input type="text" class="form-control product-name" value="${product.description}" readonly>
+                                    <div class="search-results"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="form-control-plaintext product-uom">${product.uom}</span>
+                            </div>
+                            <div>
+                                <input type="number" class="form-control quantity" min="0" step="0.01" value="${item.quantity}">
+                            </div>
+                            <div>
+                                <input type="number" class="form-control price" step="0.01" value="${item.price}">
+                            </div>
+                            <div>
+                                <span class="form-control-plaintext total">${item.amount.toFixed(2)}</span>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-danger btn-sm remove-row">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    // Add event listeners
+                    const productNameInput = row.querySelector('.product-name');
+                    const qtyInput = row.querySelector('.quantity');
+                    const priceInput = row.querySelector('.price');
+                    const removeBtn = row.querySelector('.remove-row');
+                    
+                    productNameInput.addEventListener('click', function() {
+                        this.readOnly = false;
+                        this.select();
+                        setupProductSearch(this);
+                    });
+                    
+                    qtyInput.addEventListener('input', () => {
+                        calculateRowTotal(row);
+                        updateTotals();
+                    });
+                    
+                    qtyInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            priceInput.focus();
+                            priceInput.select();
+                        }
+                    });
+                    
+                    priceInput.addEventListener('input', () => {
+                        calculateRowTotal(row);
+                        updateTotals();
+                    });
+                    
+                    priceInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            searchInput.focus();
+                        }
+                    });
+                    
+                    removeBtn.addEventListener('click', () => {
+                        row.remove();
+                        updateSerialNumbers();
+                        updateTotals();
+                        searchInput.focus();
+                    });
+                    
+                    itemsContainer.appendChild(row);
+                });
+                
+                updateSerialNumbers();
+                updateTotals();
+                
+                // Set up keyboard navigation for all rows
+                itemsContainer.querySelectorAll('.item-row').forEach(row => {
+                    setupFieldNavigation(row);
+                });
+            });
+    }
+
+    function setupFieldNavigation(row) {
+        const productNameInput = row.querySelector('.product-name');
+        const qtyInput = row.querySelector('.quantity');
+        const priceInput = row.querySelector('.price');
+
+        // Helper function to find the next row's input
+        function getNextRowInput(currentRow, inputSelector) {
+            const nextRow = currentRow.nextElementSibling;
+            if (nextRow && !nextRow.classList.contains('header')) {
+                return nextRow.querySelector(inputSelector);
+            }
+            return null;
+        }
+
+        // Helper function to find the previous row's input
+        function getPrevRowInput(currentRow, inputSelector) {
+            const prevRow = currentRow.previousElementSibling;
+            if (prevRow && !prevRow.classList.contains('header')) {
+                return prevRow.querySelector(inputSelector);
+            }
+            return null;
+        }
+
+        // Product Name field navigation
+        productNameInput.addEventListener('keydown', function(e) {
+            const searchResults = row.querySelector('.search-results');
+            const isSearchVisible = searchResults.style.display !== 'none';
+            
+            if (isSearchVisible && ['ArrowUp', 'ArrowDown'].includes(e.key)) {
+                return; // Let the search results handle up/down navigation
+            }
+
+            switch(e.key) {
+                case 'Delete':
+                    e.preventDefault();
+                    const nextRow = row.nextElementSibling;
+                    row.remove();
+                    updateSerialNumbers();
+                    updateTotals();
+                    if (nextRow) {
+                        const nextInput = nextRow.querySelector('.product-name');
+                        if (nextInput) nextInput.focus();
+                    } else {
+                        document.getElementById('product-search').focus();
+                    }
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    qtyInput.focus();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    const prevRowPrice = getPrevRowInput(row, '.price');
+                    if (prevRowPrice) prevRowPrice.focus();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    const nextName = getNextRowInput(row, '.product-name');
+                    if (nextName) nextName.focus();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    const prevName = getPrevRowInput(row, '.product-name');
+                    if (prevName) {
+                        prevName.focus();
+                    } else {
+                        document.getElementById('product-search').focus();
+                    }
+                    break;
+            }
+        });
+
+        // Quantity field navigation
+        qtyInput.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'ArrowRight':
+                    e.preventDefault();
+                    priceInput.focus();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    productNameInput.focus();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    const nextQty = getNextRowInput(row, '.quantity');
+                    if (nextQty) nextQty.focus();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    const prevQty = getPrevRowInput(row, '.quantity');
+                    if (prevQty) prevQty.focus();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    priceInput.focus();
+                    priceInput.select();
+                    break;
+            }
+        });
+
+        // Price field navigation
+        priceInput.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'ArrowRight':
+                    e.preventDefault();
+                    const nextRowName = getNextRowInput(row, '.product-name');
+                    if (nextRowName) {
+                        nextRowName.focus();
+                    } else {
+                        document.getElementById('product-search').focus();
+                    }
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    qtyInput.focus();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    const nextPrice = getNextRowInput(row, '.price');
+                    if (nextPrice) nextPrice.focus();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    const prevPrice = getPrevRowInput(row, '.price');
+                    if (prevPrice) prevPrice.focus();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    document.getElementById('product-search').focus();
+                    break;
+            }
+        });
+    }
+
+    // Main search input navigation
+    searchInput.addEventListener('keydown', function(e) {
+        const searchResults = searchInput.parentElement.querySelector('.search-results');
+        const isSearchVisible = searchResults.style.display !== 'none';
+        
+        if (isSearchVisible && ['ArrowUp', 'ArrowDown'].includes(e.key)) {
+            return; // Let the search results handle up/down navigation
+        }
+
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                const firstRow = itemsContainer.querySelector('.item-row');
+                if (firstRow) {
+                    const firstInput = firstRow.querySelector('.product-name');
+                    if (firstInput) firstInput.focus();
+                }
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                const firstRowQty = itemsContainer.querySelector('.item-row .quantity');
+                if (firstRowQty) firstRowQty.focus();
+                break;
+        }
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+S: Save invoice
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveInvoice(false);
+        }
+        // Ctrl+P: Save and print invoice
+        else if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            saveInvoice(true);
+        }
+        // Ctrl+A: Focus customer name
+        else if (e.ctrlKey && e.key === 'a') {
+            e.preventDefault();
+            const customerNameInput = document.getElementById('customer_name');
+            customerNameInput.focus();
+            customerNameInput.select();
+        }
+    });
+
+    // Mobile Product Entry Modal
+    const addProductFab = document.getElementById('add-product-fab');
+    const productEntryModal = document.getElementById('product-entry-modal');
+    const closeModalBtn = document.getElementById('close-modal');
+    const modalCancelBtn = document.getElementById('modal-cancel');
+    const modalAddBtn = document.getElementById('modal-add');
+    const modalProductSearch = document.getElementById('modal-product-search');
+    const modalProductName = document.getElementById('modal-product-name');
+    const modalQuantity = document.getElementById('modal-quantity');
+    const modalPrice = document.getElementById('modal-price');
+    let selectedProduct = null;
+    
+    function showModal() {
+        productEntryModal.classList.add('show');
+        modalProductSearch.value = '';
+        modalProductName.value = '';
+        modalQuantity.value = '';
+        modalPrice.value = '';
+        selectedProduct = null;
+        modalProductSearch.focus();
+    }
+    
+    function hideModal() {
+        productEntryModal.classList.remove('show');
+        const searchResults = modalProductSearch.parentElement.querySelector('.search-results');
+        searchResults.style.display = 'none';
+    }
+    
+    function handleModalProductSelect(product) {
+        selectedProduct = product;
+        modalProductSearch.value = product.item_code;
+        modalProductName.value = product.description;
+        modalPrice.value = product.price;
+        modalQuantity.value = '';
+        modalQuantity.focus();
+        
+        const searchResults = modalProductSearch.parentElement.querySelector('.search-results');
+        if (searchResults) {
+            searchResults.classList.remove('show');
+        }
+    }
+    
+    function addProductFromModal() {
+        if (!selectedProduct) {
+            alert('Please select a product first');
+            return;
+        }
+        
+        if (!modalQuantity.value) {
+            alert('Please enter quantity');
+            return;
+        }
+        
+        createProductRow({
+            id: selectedProduct.id,
+            item_code: selectedProduct.item_code,
+            description: selectedProduct.description,
+            uom: selectedProduct.uom,
+            price: parseFloat(modalPrice.value),
+            stock: selectedProduct.stock
+        });
+        
+        // Set the quantity after row creation
+        const lastRow = itemsContainer.lastElementChild;
+        const qtyInput = lastRow.querySelector('.quantity');
+        qtyInput.value = modalQuantity.value;
+        calculateRowTotal(lastRow);
+        updateTotals();
+        
+        hideModal();
+    }
+    
+    // Set up event listeners for modal
+    addProductFab.addEventListener('click', showModal);
+    closeModalBtn.addEventListener('click', hideModal);
+    modalCancelBtn.addEventListener('click', hideModal);
+    modalAddBtn.addEventListener('click', addProductFromModal);
+    
+    // Close modal when clicking outside
+    productEntryModal.addEventListener('click', function(e) {
+        if (e.target === productEntryModal) {
+            hideModal();
+        }
+    });
+    
+    // Override the product selection for modal search
+    const originalSetupProductSearch = setupProductSearch;
+    setupProductSearch = function(input) {
+        if (input.id === 'modal-product-search') {
+            const results = input.parentElement.querySelector('.search-results');
+            
+            // Handle input changes
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                if (query.length < 1) {
+                    results.classList.remove('show');
+                    return;
+                }
+                
+                fetch(`/products/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        searchItems = products;
+                        results.innerHTML = '';
+                        
+                        if (products.length === 0) {
+                            results.classList.remove('show');
+                            return;
+                        }
+                        
+                        products.forEach((product, index) => {
+                            const div = createSearchItem(product);
+                            results.appendChild(div);
+                        });
+                        
+                        results.classList.add('show');
+                        updateDropdownPosition(results);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching products:', error);
+                        results.classList.remove('show');
+                    });
+            });
+            
+            // Handle focus
+            input.addEventListener('focus', function() {
+                if (this.value.trim().length > 0) {
+                    results.classList.add('show');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !results.contains(e.target)) {
+                    results.classList.remove('show');
+                }
+            });
+        } else {
+            // Original product search setup for non-modal search
+            const results = input.parentElement.querySelector('.search-results');
+            
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                selectedSearchIndex = -1;
+                
+                if (query.length < 1) {
+                    results.style.display = 'none';
+                    return;
+                }
+                
+                fetch(`/products/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        searchItems = products;
+                        results.innerHTML = '';
+                        products.forEach((product, index) => {
+                            const div = createSearchItem(product);
+                            results.appendChild(div);
+                        });
+                        if (products.length) {
+                            results.style.display = 'block';
+                            updateDropdownPosition(results);
+                        } else {
+                            results.style.display = 'none';
+                        }
+                    });
+            });
+        }
+    };
+    
+    function handleModalProductSelect(product) {
+        selectedProduct = product;
+        modalProductSearch.value = product.item_code;
+        modalProductName.value = product.description;
+        modalPrice.value = product.price;
+        modalQuantity.value = '';
+        modalQuantity.focus();
+        
+        const searchResults = modalProductSearch.parentElement.querySelector('.search-results');
+        if (searchResults) {
+            searchResults.classList.remove('show');
+        }
+    }
+    
+    // Initialize product search for the modal
+    setupProductSearch(modalProductSearch);
+
+    // Add keyboard navigation to search input
+    searchInput.addEventListener('keydown', function(e) {
+        const searchResults = searchInput.parentElement.querySelector('.search-results');
+        const isSearchVisible = searchResults?.style.display !== 'none';
+        const items = Array.from(searchResults?.querySelectorAll('.search-item') || []);
+        
+        if (isSearchVisible && items.length > 0) {
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedSearchIndex = Math.min(selectedSearchIndex + 1, items.length - 1);
+                    updateSearchSelection(searchResults);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedSearchIndex = Math.max(selectedSearchIndex - 1, 0);
+                    updateSearchSelection(searchResults);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedSearchIndex >= 0 && selectedSearchIndex < searchItems.length) {
+                        createProductRow(searchItems[selectedSearchIndex]);
+                    }
+                    break;
+            }
+        }
+    });
+
+    // Add window resize handler
+    window.addEventListener('resize', function() {
+        const visibleResults = document.querySelector('.search-results[style*="display: block"]');
+        if (visibleResults) {
+            updateDropdownPosition(visibleResults);
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,734 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    .stats-card .icon {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        color: var(--text-color);
+        opacity: 0.8;
+    }
+    .stats-card .title {
+        font-size: 0.9em;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin-bottom: 5px;
+    }
+    .stats-card .value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: var(--text-color);
+    }
+    .chart-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        height: 400px;
+    }
+    .chart-card h5 {
+        margin-bottom: 20px;
+        color: var(--text-color);
+    }
+    .table-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .table-card h5 {
+        margin-bottom: 20px;
+        color: var(--text-color);
+    }
+    .low-stock {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-4">Dashboard</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="title">Total Products</div>
+                <div class="value">{{ stats.total_products }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="icon">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="title">Total Invoices</div>
+                <div class="value">{{ stats.total_invoices }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="icon">
+                    <i class="fas fa-rupee-sign"></i>
+                </div>
+                <div class="title">Total Sales</div>
+                <div class="value">₹{{ "%.2f"|format(stats.total_sales) }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="title">Low Stock Items</div>
+                <div class="value">{{ stats.low_stock_products|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="chart-card">
+                <h5>Sales Trend</h5>
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-card">
+                <h5>Top Selling Products</h5>
+                <canvas id="productsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h5>Slow-Moving Products</h5>
+                <canvas id="slowMovingChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h5>Stock-to-Sales Ratio</h5>
+                <canvas id="stockSalesRatioChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h5>Inventory Aging</h5>
+                <canvas id="inventoryAgingChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h5>Sales Forecast (Next 30 Days)</h5>
+                <canvas id="salesForecastChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Inventory Health Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Total Inventory Cost</div>
+                                <div class="value">₹{{ "%.2f"|format(stats.total_inventory_cost) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Stock-Out Products</div>
+                                <div class="value">{{ stats.stockout_count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Avg Stock-to-Sales Ratio</div>
+                                <div class="value">{{ "%.2f"|format(stats.avg_stock_sales_ratio) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Slow-Moving Products</div>
+                                <div class="value">{{ stats.slow_moving_count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Stock-Out Frequency Report</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Stock-Out Count</th>
+                                    <th>Last Stock-Out</th>
+                                    <th>Average Duration</th>
+                                    <th>Risk Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in stats.stockout_frequency %}
+                                <tr>
+                                    <td>{{ item.product_name }}</td>
+                                    <td>{{ item.stockout_count }}</td>
+                                    <td>{{ item.last_stockout }}</td>
+                                    <td>{{ item.avg_duration }} days</td>
+                                    <td>
+                                        <span class="badge bg-{{ item.risk_level_color }}">
+                                            {{ item.risk_level }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="table-card">
+                <h5>Recent Invoices</h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in stats.recent_invoices %}
+                            <tr>
+                                <td>{{ invoice.order_number }}</td>
+                                <td>{{ invoice.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ invoice.customer_name }}</td>
+                                <td>₹{{ "%.2f"|format(invoice.total_amount) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        Stock Level Alerts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if stats.low_stock_products %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Description</th>
+                                    <th>Current Stock</th>
+                                    <th>Restock Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in stats.low_stock_products %}
+                                <tr>
+                                    <td>{{ product.item_code }}</td>
+                                    <td>{{ product.description }}</td>
+                                    <td>{{ product.stock }}</td>
+                                    <td>{{ product.restock_level }}</td>
+                                    <td>
+                                        {% if product.stock == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                        {% elif product.stock <= product.restock_level * 0.5 %}
+                                        <span class="badge bg-danger">Critical</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0">
+                        <i class="fas fa-check-circle"></i>
+                        All products are above their restock levels.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Sales Performance Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Daily Sales</div>
+                                <div class="value" id="dailySales">₹0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Weekly Sales</div>
+                                <div class="value" id="weeklySales">₹0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Monthly Sales</div>
+                                <div class="value" id="monthlySales">₹0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="title">Yearly Sales</div>
+                                <div class="value" id="yearlySales">₹0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Sales Growth Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <div class="title">Day-over-Day Growth</div>
+                                <div class="value" id="dodGrowth">0.00%</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <div class="title">Month-over-Month Growth</div>
+                                <div class="value" id="momGrowth">0.00%</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <div class="title">Year-over-Year Growth</div>
+                                <div class="value" id="yoyGrowth">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Sales Trend Analysis</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="updateSalesTrend('daily')">Daily</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateSalesTrend('weekly')">Weekly</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateSalesTrend('monthly')">Monthly</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateSalesTrend('yearly')">Yearly</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial sales performance data
+    loadSalesPerformance();
+    loadSalesGrowth();
+    updateSalesTrend('daily');  // Load daily sales trend by default
+
+    // Fetch sales data for the chart
+    fetch('/api/sales_trend')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Sales',
+                        data: data.values,
+                        borderColor: '#0d6efd',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Fetch top products data for the chart
+    fetch('/api/top_products')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('productsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.values,
+                        backgroundColor: [
+                            '#0d6efd',
+                            '#198754',
+                            '#dc3545',
+                            '#ffc107',
+                            '#6610f2'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        });
+
+    // Slow Moving Products Chart
+    fetch('/api/slow_moving_products')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('slowMovingChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Days Since Last Sale',
+                        data: data.values,
+                        backgroundColor: '#dc3545',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Days'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Stock-to-Sales Ratio Chart
+    fetch('/api/stock_sales_ratio')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('stockSalesRatioChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Stock-to-Sales Ratio',
+                        data: data.values,
+                        borderColor: '#198754',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ratio'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Inventory Aging Chart
+    fetch('/api/inventory_aging')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('inventoryAgingChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Products',
+                        data: data.values,
+                        backgroundColor: [
+                            '#0d6efd',
+                            '#6610f2',
+                            '#dc3545',
+                            '#ffc107'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Products'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Sales Forecast Chart
+    fetch('/api/sales_forecast')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('salesForecastChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Actual Sales',
+                        data: data.actual_values,
+                        backgroundColor: '#0d6efd',
+                        order: 2
+                    },
+                    {
+                        label: 'Forecast',
+                        data: data.forecast_values,
+                        borderColor: '#ffc107',
+                        borderDash: [5, 5],
+                        type: 'line',
+                        order: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Sales Amount (₹)'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+});
+
+function loadSalesPerformance() {
+    fetch('/api/sales_performance')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('dailySales').textContent = '₹' + data.daily.toLocaleString();
+            document.getElementById('weeklySales').textContent = '₹' + data.weekly.toLocaleString();
+            document.getElementById('monthlySales').textContent = '₹' + data.monthly.toLocaleString();
+            document.getElementById('yearlySales').textContent = '₹' + data.yearly.toLocaleString();
+        });
+}
+
+function loadSalesGrowth() {
+    fetch('/api/sales_growth')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('dodGrowth').textContent = formatGrowth(data.dod_growth);
+            document.getElementById('momGrowth').textContent = formatGrowth(data.mom_growth);
+            document.getElementById('yoyGrowth').textContent = formatGrowth(data.yoy_growth);
+        });
+}
+
+function formatGrowth(value) {
+    const sign = value >= 0 ? '+' : '';
+    return sign + value.toFixed(2) + '%';
+}
+
+let salesTrendChart = null;
+
+function updateSalesTrend(period) {
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase() === period) {
+            btn.classList.add('active');
+        }
+    });
+
+    fetch(`/api/sales_trend_by_period?period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('salesTrendChart').getContext('2d');
+            
+            if (salesTrendChart) {
+                salesTrendChart.destroy();
+            }
+
+            salesTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Sales',
+                        data: data.values,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₹' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+}
+</script>
+{% endblock %} 

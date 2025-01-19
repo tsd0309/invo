@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- iOS specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Inventory">
+    <title>Login - Inventory System</title>
+    <style>
+        :root {
+            --calc-bg: #202020;
+            --btn-operator: #333333;
+            --btn-number: #323232;
+            --btn-function: #2b2b2b;
+            --btn-equals: #0067c0;
+            --text-color: #ffffff;
+            --form-bg: rgba(0, 0, 0, 0.9);
+        }
+
+        /* Prevent double-tap zoom */
+        * {
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: var(--calc-bg);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            position: relative;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .calculator-wrapper {
+            width: 100%;
+            max-width: 100%;
+            background-color: var(--calc-bg);
+            border-radius: 0;
+            padding: clamp(8px, 2vw, 16px);
+            box-shadow: none;
+            box-sizing: border-box;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calculator-wrapper.show {
+            display: flex;
+        }
+
+        .display {
+            background-color: var(--calc-bg);
+            color: var(--text-color);
+            text-align: right;
+            padding: clamp(10px, 3vw, 20px);
+            font-size: clamp(24px, 5vw, 48px);
+            margin-bottom: clamp(10px, 2vw, 20px);
+            min-height: clamp(80px, 15vh, 120px);
+            max-width: 800px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            box-sizing: border-box;
+        }
+
+        .display .previous {
+            font-size: clamp(14px, 3vw, 18px);
+            color: #888;
+            min-height: 20px;
+            margin-bottom: 5px;
+        }
+
+        .display .current {
+            font-size: clamp(36px, 6vw, 48px);
+            word-break: break-all;
+            max-width: 100%;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: clamp(4px, 1vw, 8px);
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        .btn {
+            border: none;
+            font-size: clamp(16px, 3vw, 24px);
+            color: var(--text-color);
+            background-color: var(--btn-number);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            padding: clamp(8px, 2vw, 20px) 0;
+            min-height: clamp(40px, 8vh, 60px);
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn:hover {
+            background-color: #404040;
+        }
+
+        .btn:active {
+            background-color: #505050;
+        }
+
+        .btn.function {
+            background-color: var(--btn-function);
+            font-size: 16px;
+        }
+
+        .btn.operator {
+            background-color: var(--btn-operator);
+        }
+
+        .btn.equals {
+            background-color: var(--btn-equals);
+        }
+
+        .btn.equals:hover {
+            background-color: #0078d4;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--form-bg);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-overlay.show {
+            display: flex;
+        }
+
+        .login-form {
+            background-color: #2c2c2e;
+            padding: 40px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 320px;
+        }
+
+        .login-form h2 {
+            color: var(--text-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #3c3c3e;
+            color: var(--text-color);
+            font-size: 16px;
+        }
+
+        .login-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .login-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .login-buttons .cancel-btn {
+            background-color: #3c3c3e;
+            color: var(--text-color);
+        }
+
+        .login-buttons .submit-btn {
+            background-color: var(--btn-equals);
+            color: var(--text-color);
+        }
+    </style>
+    <script>
+        // Prevent zooming
+        document.addEventListener('touchstart', (event) => {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (event) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    </script>
+</head>
+<body>
+    <div class="calculator-wrapper">
+        <div class="display">
+            <div class="previous"></div>
+            <div class="current">0</div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn function" data-key="Escape">C</button>
+            <button class="btn function" data-key="Backspace">⌫</button>
+            <button class="btn operator" data-key="%">%</button>
+            <button class="btn operator" data-key="/">÷</button>
+            
+            <button class="btn" data-key="7">7</button>
+            <button class="btn" data-key="8">8</button>
+            <button class="btn" data-key="9">9</button>
+            <button class="btn operator" data-key="*">×</button>
+            
+            <button class="btn" data-key="4">4</button>
+            <button class="btn" data-key="5">5</button>
+            <button class="btn" data-key="6">6</button>
+            <button class="btn operator" data-key="-">-</button>
+            
+            <button class="btn" data-key="1">1</button>
+            <button class="btn" data-key="2">2</button>
+            <button class="btn" data-key="3">3</button>
+            <button class="btn operator" data-key="+">+</button>
+            
+            <button class="btn function" data-key="n">±</button>
+            <button class="btn" data-key="0">0</button>
+            <button class="btn" data-key=".">.</button>
+            <button class="btn equals" data-key="Enter">=</button>
+        </div>
+    </div>
+
+    <div class="login-overlay">
+        <div class="login-form">
+            <h2>Login</h2>
+            <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label for="totp_token">2FA Code (if enabled)</label>
+                    <input type="text" id="totp_token" name="totp_token" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*">
+                </div>
+                <div class="login-buttons">
+                    <button type="button" class="cancel-btn" onclick="hideLoginForm()">Cancel</button>
+                    <button type="submit" class="submit-btn">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentValue = '0';
+        let previousValue = '';
+        let operator = '';
+        let shouldResetDisplay = false;
+        const display = document.querySelector('.display .current');
+        const previousDisplay = document.querySelector('.display .previous');
+        const loginOverlay = document.querySelector('.login-overlay');
+        const calculatorWrapper = document.querySelector('.calculator-wrapper');
+        
+        // Always show calculator first
+        document.addEventListener('DOMContentLoaded', function() {
+            clearDisplay();
+        });
+
+        function showLoginForm() {
+            loginOverlay.classList.add('show');
+            clearDisplay();
+        }
+
+        function hideLoginForm() {
+            loginOverlay.classList.remove('show');
+            clearDisplay();
+        }
+
+        function calculate() {
+            if (!operator || !previousValue) {
+                // Check for login code
+                if (currentValue === '9999') {
+                    showLoginForm();
+                    return;
+                }
+                return;
+            }
+
+            let result;
+            const prev = parseFloat(previousValue);
+            const current = parseFloat(currentValue);
+
+            switch(operator) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '×':
+                    result = prev * current;
+                    break;
+                case '÷':
+                    result = prev / current;
+                    break;
+            }
+
+            currentValue = result.toString();
+            operator = '';
+            previousValue = '';
+            updateDisplay();
+            shouldResetDisplay = true;
+
+            // Check result for login code
+            if (currentValue === '9999') {
+                showLoginForm();
+            }
+        }
+
+        function updateDisplay() {
+            display.textContent = currentValue;
+            if (previousValue && operator) {
+                previousDisplay.textContent = `${previousValue} ${operator}`;
+            } else {
+                previousDisplay.textContent = '';
+            }
+        }
+
+        function appendNumber(num) {
+            if (currentValue === '0' || shouldResetDisplay) {
+                currentValue = num;
+                shouldResetDisplay = false;
+            } else {
+                currentValue += num;
+            }
+            updateDisplay();
+        }
+
+        function appendDecimal() {
+            if (!currentValue.includes('.')) {
+                currentValue += '.';
+                updateDisplay();
+            }
+        }
+
+        function clearDisplay() {
+            currentValue = '0';
+            previousValue = '';
+            operator = '';
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (currentValue.length > 1) {
+                currentValue = currentValue.slice(0, -1);
+            } else {
+                currentValue = '0';
+            }
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            currentValue = (parseFloat(currentValue) * -1).toString();
+            updateDisplay();
+        }
+
+        function percentage() {
+            currentValue = (parseFloat(currentValue) / 100).toString();
+            updateDisplay();
+        }
+
+        function setOperator(op) {
+            if (operator && previousValue) {
+                calculate();
+            }
+            previousValue = currentValue;
+            operator = op;
+            shouldResetDisplay = true;
+        }
+
+        // Add keyboard support
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            
+            // Prevent default behavior for calculator keys
+            if (/[\d\+\-\*\/\.\%]/.test(key) || 
+                key === 'Enter' || 
+                key === 'Escape' || 
+                key === 'Backspace' ||
+                key === 'n') {
+                event.preventDefault();
+            }
+
+            // Find and click the corresponding button
+            const button = document.querySelector(`button[data-key="${key}"]`);
+            if (button) {
+                button.click();
+                button.classList.add('active');
+                setTimeout(() => button.classList.remove('active'), 100);
+            }
+        });
+
+        // Add click handlers for buttons
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const value = button.textContent;
+                
+                if (value >= '0' && value <= '9') {
+                    appendNumber(value);
+                } else if (value === '.') {
+                    appendDecimal();
+                } else if (value === 'C') {
+                    clearDisplay();
+                } else if (value === '⌫') {
+                    backspace();
+                } else if (value === '±') {
+                    toggleSign();
+                } else if (value === '%') {
+                    percentage();
+                } else if (['+', '-', '×', '÷'].includes(value)) {
+                    setOperator(value);
+                } else if (value === '=') {
+                    calculate();
+                }
+            });
+        });
+
+        // Initialize display
+        updateDisplay();
+
+        // Prevent calculator keyboard events when focused on login form
+        document.querySelectorAll('.login-form input').forEach(input => {
+            input.addEventListener('keydown', (event) => {
+                event.stopPropagation();
+            });
+        });
+
+        // Enable form submission with Enter key
+        document.getElementById('loginForm').addEventListener('keydown', (event) => {
+            event.stopPropagation();
+        });
+    </script>
+</body>
+</html> 

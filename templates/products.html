@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Products List</h5>
+            <div class="mt-2">
+                <input type="text" id="productSearch" class="form-control" placeholder="Search products...">
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('import-excel').click()">
+                Import Excel
+            </button>
+            <button type="button" class="btn btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#pasteImportModal">
+                Copy & Paste Import
+            </button>
+            <a href="/products/export" class="btn btn-info ms-2">Export Excel</a>
+            <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                Add New Product
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <form id="import-form" style="display: none;">
+            <input type="file" id="import-excel" accept=".xlsx,.xls,.csv" onchange="handleImport(this)">
+        </form>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Description</th>
+                        <th>Tamil Name</th>
+                        <th>UOM</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Restock Level</th>
+                        <th>Quick Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.item_code }}</td>
+                        <td>{{ product.description }}</td>
+                        <td>{{ product.tamil_name or '' }}</td>
+                        <td>{{ product.uom }}</td>
+                        <td>{{ product.price }}</td>
+                        <td>{{ product.stock }}</td>
+                        <td>{{ product.restock_level }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-danger quick-stock-dec" data-id="{{ product.id }}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success quick-stock-inc" data-id="{{ product.id }}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary edit-product" 
+                                    data-id="{{ product.id }}"
+                                    data-code="{{ product.item_code }}"
+                                    data-description="{{ product.description }}"
+                                    data-tamil-name="{{ product.tamil_name or '' }}"
+                                    data-uom="{{ product.uom }}"
+                                    data-price="{{ product.price }}"
+                                    data-stock="{{ product.stock }}"
+                                    data-restock-level="{{ product.restock_level }}">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-product" data-id="{{ product.id }}">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    <div class="mb-3">
+                        <label class="form-label">Item Code</label>
+                        <input type="text" class="form-control" name="item_code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tamil Name</label>
+                        <input type="text" class="form-control" name="tamil_name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">UOM</label>
+                        <input type="text" class="form-control" name="uom" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" name="price" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Initial Stock</label>
+                        <input type="number" class="form-control" name="stock" value="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Restock Level</label>
+                        <input type="number" class="form-control" name="restock_level" value="0" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveProduct">Save Product</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <input type="hidden" name="id">
+                    <div class="mb-3">
+                        <label class="form-label">Item Code</label>
+                        <input type="text" class="form-control" name="item_code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tamil Name</label>
+                        <input type="text" class="form-control" name="tamil_name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">UOM</label>
+                        <input type="text" class="form-control" name="uom" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" name="price" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stock</label>
+                        <input type="number" class="form-control" name="stock" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Restock Level</label>
+                        <input type="number" class="form-control" name="restock_level" value="0" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="updateProduct">Update Product</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Paste Import Modal -->
+<div class="modal fade" id="pasteImportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Products from Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <h6>Instructions:</h6>
+                    <ol>
+                        <li>Open your Excel file</li>
+                        <li>Select and copy (Ctrl+C) the data rows including headers</li>
+                        <li>Paste (Ctrl+V) the data below</li>
+                        <li>Make sure the columns are in this order: Item Code, Description, UOM, Price, Stock</li>
+                    </ol>
+                </div>
+                <textarea id="pasteInput" class="form-control" rows="10" placeholder="Paste your Excel data here..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="processPastedData">Import Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stock Adjustment Modal -->
+<div class="modal fade" id="stockAdjustmentModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjust Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="stockAdjustmentForm">
+                    <input type="hidden" id="adjustProductId">
+                    <input type="hidden" id="adjustmentType">
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="adjustmentQuantity" min="1" value="1" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmStockAdjustment">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    document.getElementById('productSearch').addEventListener('input', function(e) {
+        const searchText = e.target.value.toLowerCase();
+        const tableRows = document.querySelectorAll('tbody tr');
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    });
+
+    // File Import Handler
+    window.handleImport = function(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Show loading state
+        const importBtn = document.querySelector('[onclick="document.getElementById(\'import-excel\').click()"]');
+        const originalText = importBtn.textContent;
+        importBtn.textContent = 'Importing...';
+        importBtn.disabled = true;
+
+        fetch('/products/import', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || 'Products imported successfully');
+                location.reload();
+            } else {
+                alert('Error importing products: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error importing products. Please try again.');
+        })
+        .finally(() => {
+            // Reset input and button
+            input.value = '';
+            importBtn.textContent = originalText;
+            importBtn.disabled = false;
+        });
+    };
+
+    // Add Product
+    document.getElementById('saveProduct').addEventListener('click', function() {
+        const form = document.getElementById('addProductForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        fetch('/products', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error saving product: ' + data.error);
+            }
+        });
+    });
+
+    // Edit Product
+    document.querySelectorAll('.edit-product').forEach(button => {
+        button.addEventListener('click', function() {
+            const form = document.getElementById('editProductForm');
+            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+            
+            form.querySelector('[name="id"]').value = this.dataset.id;
+            form.querySelector('[name="item_code"]').value = this.dataset.code;
+            form.querySelector('[name="description"]').value = this.dataset.description;
+            form.querySelector('[name="tamil_name"]').value = this.dataset.tamilName;
+            form.querySelector('[name="uom"]').value = this.dataset.uom;
+            form.querySelector('[name="price"]').value = this.dataset.price;
+            form.querySelector('[name="stock"]').value = this.dataset.stock;
+            form.querySelector('[name="restock_level"]').value = this.dataset.restockLevel;
+            
+            modal.show();
+        });
+    });
+
+    // Update Product
+    document.getElementById('updateProduct').addEventListener('click', function() {
+        const form = document.getElementById('editProductForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        const id = data.id;
+        
+        fetch(`/products/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating product: ' + data.error);
+            }
+        });
+    });
+
+    // Delete Product
+    document.querySelectorAll('.delete-product').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this product?')) {
+                const id = this.dataset.id;
+                
+                fetch(`/products/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting product: ' + data.error);
+                    }
+                });
+            }
+        });
+    });
+
+    // Add the paste import handler
+    document.getElementById('processPastedData').addEventListener('click', function() {
+        const textarea = document.getElementById('pasteInput');
+        const data = textarea.value.trim();
+        
+        if (!data) {
+            alert('Please paste some data first');
+            return;
+        }
+
+        // Parse the pasted data
+        const rows = data.split('\n').map(row => row.split('\t'));
+        
+        // Skip header row and process data
+        const products = [];
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.length < 7) continue; // Skip invalid rows
+            
+            try {
+                const product = {
+                    item_code: row[0].trim(),
+                    description: row[1].trim(),
+                    tamil_name: row[2].trim(),
+                    uom: row[3].trim(),
+                    price: parseFloat(row[4].replace(/[^0-9.-]+/g, '')),
+                    stock: parseInt(row[5].replace(/[^0-9-]+/g, '')),
+                    restock_level: parseInt(row[6].replace(/[^0-9-]+/g, '')) || 0
+                };
+                
+                if (product.item_code && product.description && product.uom && 
+                    !isNaN(product.price) && !isNaN(product.stock)) {
+                    products.push(product);
+                }
+            } catch (e) {
+                console.error('Error processing row:', e);
+            }
+        }
+
+        if (products.length === 0) {
+            alert('No valid data found. Please check the format and try again.');
+            return;
+        }
+
+        // Show loading state
+        const importBtn = document.getElementById('processPastedData');
+        const originalText = importBtn.textContent;
+        importBtn.textContent = 'Importing...';
+        importBtn.disabled = true;
+
+        // Send the processed data to the server
+        fetch('/products/import-json', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ products: products })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || 'Products imported successfully');
+                location.reload();
+            } else {
+                alert('Error importing products: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error importing products. Please try again.');
+        })
+        .finally(() => {
+            // Reset
+            textarea.value = '';
+            importBtn.textContent = originalText;
+            importBtn.disabled = false;
+        });
+    });
+
+    // Quick Stock Adjustment
+    const stockModal = new bootstrap.Modal(document.getElementById('stockAdjustmentModal'));
+
+    document.querySelectorAll('.quick-stock-dec, .quick-stock-inc').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const isDecrease = this.classList.contains('quick-stock-dec');
+            
+            // Set values in the modal
+            document.getElementById('adjustProductId').value = id;
+            document.getElementById('adjustmentType').value = isDecrease ? 'decrease' : 'increase';
+            document.getElementById('adjustmentQuantity').value = '1';
+            
+            // Update modal title based on action
+            document.querySelector('#stockAdjustmentModal .modal-title').textContent = 
+                isDecrease ? 'Decrease Stock' : 'Increase Stock';
+            
+            // Show the modal
+            stockModal.show();
+        });
+    });
+
+    // Handle stock adjustment confirmation
+    document.getElementById('confirmStockAdjustment').addEventListener('click', function() {
+        const id = document.getElementById('adjustProductId').value;
+        const type = document.getElementById('adjustmentType').value;
+        const quantity = parseInt(document.getElementById('adjustmentQuantity').value) || 0;
+        
+        if (quantity <= 0) {
+            alert('Please enter a valid quantity');
+            return;
+        }
+        
+        const change = type === 'decrease' ? -quantity : quantity;
+        
+        fetch(`/products/${id}/stock`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ change: change })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the stock display in the table
+                const row = document.querySelector(`button[data-id="${id}"]`).closest('tr');
+                const stockCell = row.querySelector('td:nth-child(5)');
+                stockCell.textContent = data.new_stock;
+                
+                // Close the modal
+                stockModal.hide();
+            } else {
+                alert('Error updating stock: ' + data.error);
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 
