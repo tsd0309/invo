@@ -11,4 +11,14 @@ services:
         value: production
       - key: DATABASE_URL
         sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_COOKIE_SECURE
+        value: "True"
+      - key: FLASK_COOKIE_HTTPONLY
+        value: "True"
+      - key: GUNICORN_WORKERS
+        value: "4"
+      - key: PYTHONUNBUFFERED
+        value: "1"
     autoDeploy: true 
